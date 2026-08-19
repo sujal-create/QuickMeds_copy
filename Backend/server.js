@@ -1,7 +1,13 @@
+import dns from 'dns';
+
+dns.setServers(['8.8.8.8', '8.8.4.4']);
+
+
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
+import medicineRoutes from "./routes/medicineRoutes.js";
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -36,7 +42,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/payment', paymentRoute); // ✅ Registered here
-
+app.use("/api/medicines", medicineRoutes);
 // Default route
 app.get('/', (req, res) => {
   res.send('QuickMeds API is running...');
