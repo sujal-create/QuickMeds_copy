@@ -2,7 +2,6 @@ import dns from 'dns';
 
 dns.setServers(['8.8.8.8', '8.8.4.4']);
 
-
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -15,9 +14,10 @@ import jobRoutes from './routes/jobRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import doctorRoutes from './routes/doctorRoutes.js';
 import contactRoutes from './routes/contactRoutes.js';
-import paymentRoute from './routes/paymentRoutes.js'; // ✅ Added this line
+import paymentRoute from './routes/paymentRoutes.js';
 
 dotenv.config();
+
 const app = express();
 
 // Setup __dirname in ES Module
@@ -41,15 +41,13 @@ app.use('/api/jobs', jobRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/contact', contactRoutes);
-app.use('/api/payment', paymentRoute); // ✅ Registered here
-app.use("/api/medicines", medicineRoutes);
+app.use('/api/payment', paymentRoute);
+app.use('/api/medicines', medicineRoutes);
+
 // Default route
 app.get('/', (req, res) => {
   res.send('QuickMeds API is running...');
 });
 
-// Start Server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Vercel ke liye
+export default app;
