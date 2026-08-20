@@ -1,95 +1,276 @@
-import express from 'express';
-import User from '../models/userModel.js';
-import generateToken from '../utils/generateToken.js';
-import { protect, admin } from '../middleware/authMiddleware.js';
+import express from "express";
+import jwt from "jsonwebtoken";
+
+import User from "../models/userModel.js";
+import generateToken from "../utils/generateToken.js";
+import { protect, admin } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// @desc    Auth user & get token
-// @route   POST /api/users/login
-// @access  Public
-router.post('/login', async (req, res) => {
+
+// ======================================================
+// USER LOGIN
+// POST /api/users/login
+// ======================================================
+router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Find user by email
-    const user = await User.findOne({ email });
+    const user = await User.findOne({
+      email: email?.trim().toLowerCase(),
+    });
 
-    // Check if user exists and password matches
     if (user && (await user.matchPassword(password))) {
-      res.json({
+      return res.json({
         _id: user._id,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
-        phone: user.phone,
-        isAdmin: user.isAdmin,
+        phone: user.phone || "",
+        isAdmin: user.isAdmin || false,
         token: generateToken(user._id),
       });
-    } else {
-      res.status(401).json({ message: 'Invalid email or password' });
     }
+
+    return res.status(401).json({
+      message: "Invalid email or password",
+    });
+
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Login error:", error);
+
+    return res.status(500).json({
+      message: "Server error",
+    });
   }
 });
 
-// @desc    Register a new user
-// @route   POST /api/users
-// @access  Public
-router.post('/', async (req, res) => {
+
+// ======================================================
+// USER REGISTER / SIGNUP
+// POST /api/users
+// ======================================================
+router.post("/", async (req, res) => {
   try {
-    const { firstName, lastName, email, password, phone } = req.body;
-
-    // Check if user already exists
-    const userExists = await User.findOne({ email });
-
-    if (userExists) {
-      return res.status(400).json({ message: 'User already exists' });
-    }
-
-    // Create new user
-    const user = await User.create({
+    const {
       firstName,
       lastName,
       email,
       password,
       phone,
+    } = req.body;
+
+    if (
+      !firstName ||
+      !lastName ||
+      !email ||
+      !password ||
+      !phone
+    ) {
+      return res.status(400).json({
+        message: "All fields are required",
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const userExists = await User.findOne({
+      email: normalizedEmail,
     });
 
-    if (user) {
-      res.status(201).json({
-        _id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        phone: user.phone,
-        isAdmin: user.isAdmin,
-        token: generateToken(user._id),
+    if (userExists) {
+      return res.status(400).json({
+        message: "User already exists",
       });
-    } else {
-      res.status(400).json({ message: 'Invalid user data' });
     }
+
+    const user = await User.create({
+      firstName,
+      lastName,
+      email: normalizedEmail,
+      password,
+      phone,
+      isAdmin: false,
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        message: "Invalid user data",
+      });
+    }
+
+    return res.status(201).json({
+      _id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone,
+      isAdmin: user.isAdmin,
+      token: generateToken(user._id),
+    });
+
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error("Register error:", error);
+
+    return res.status(500).json({
+      message: "Server error",
+    });
   }
 });
 
-// @desc    Admin login
-// @route   POST /api/users/admin/login
-// @access  Public
-router.post('/admin/login', async (req, res) => {
+
+// ======================================================
+// CUREGO SSO LOGIN
+// POST /api/users/sso
+// ======================================================
+router.post("/sso", async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { token } = req.body;
 
-    // Find admin user
-    const user = await User.findOne({ email: username, isAdmin: true });
+    // --------------------------------------------------
+    // 1. Check CureGo token
+    // --------------------------------------------------
+    if (!token) {
+      return res.status(400).json({
+        message: "CureGo authentication token is missing",
+      });
+    }
 
-    // Check if user exists and password matches
-    if (user && (await user.matchPassword(password))) {
-      res.json({
+    console.log("CureGo SSO token received");
+
+
+    // --------------------------------------------------
+    // 2. Verify CureGo JWT
+    // --------------------------------------------------
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET
+    );
+
+    console.log("CureGo decoded token:", decoded);
+
+
+    // --------------------------------------------------
+    // 3. Check decoded user ID
+    // --------------------------------------------------
+    if (!decoded || !decoded.id) {
+      return res.status(401).json({
+        message: "Invalid CureGo token",
+      });
+    }
+
+
+    // --------------------------------------------------
+    // 4. Find SAME user in MongoDB
+    // --------------------------------------------------
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.status(404).json({
+        message:
+          "User not found in QuickMeds database",
+      });
+    }
+
+
+    // --------------------------------------------------
+    // 5. Don't allow admin through user SSO
+    // --------------------------------------------------
+    if (user.isAdmin === true) {
+      return res.status(403).json({
+        message:
+          "Admin users cannot use user SSO",
+      });
+    }
+
+
+    // --------------------------------------------------
+    // 6. Generate QuickMeds JWT
+    // --------------------------------------------------
+    const quickMedsToken = generateToken(
+      user._id
+    );
+
+
+    // --------------------------------------------------
+    // 7. Send user + QuickMeds token
+    // --------------------------------------------------
+    return res.status(200).json({
+      _id: user._id,
+      firstName: user.firstName || "",
+      lastName: user.lastName || "",
+      email: user.email || "",
+      phone: user.phone || "",
+      isAdmin: user.isAdmin || false,
+
+      token: quickMedsToken,
+    });
+
+  } catch (error) {
+    console.error(
+      "CureGo SSO login error:",
+      error
+    );
+
+
+    // --------------------------------------------------
+    // Expired token
+    // --------------------------------------------------
+    if (
+      error.name === "TokenExpiredError"
+    ) {
+      return res.status(401).json({
+        message:
+          "CureGo authentication token has expired",
+      });
+    }
+
+
+    // --------------------------------------------------
+    // Invalid token / wrong JWT secret
+    // --------------------------------------------------
+    if (
+      error.name === "JsonWebTokenError"
+    ) {
+      return res.status(401).json({
+        message:
+          "Invalid CureGo authentication token",
+      });
+    }
+
+
+    // --------------------------------------------------
+    // Other server error
+    // --------------------------------------------------
+    return res.status(500).json({
+      message:
+        "SSO authentication failed",
+    });
+  }
+});
+
+
+// ======================================================
+// ADMIN LOGIN
+// POST /api/users/admin/login
+// ======================================================
+router.post("/admin/login", async (req, res) => {
+  try {
+    const {
+      username,
+      password,
+    } = req.body;
+
+    const user = await User.findOne({
+      email: username?.trim().toLowerCase(),
+      isAdmin: true,
+    });
+
+    if (
+      user &&
+      (await user.matchPassword(password))
+    ) {
+      return res.json({
         _id: user._id,
         firstName: user.firstName,
         lastName: user.lastName,
@@ -97,13 +278,24 @@ router.post('/admin/login', async (req, res) => {
         isAdmin: user.isAdmin,
         token: generateToken(user._id),
       });
-    } else {
-      res.status(401).json({ message: 'Invalid admin credentials' });
     }
+
+    return res.status(401).json({
+      message:
+        "Invalid admin credentials",
+    });
+
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    console.error(
+      "Admin login error:",
+      error
+    );
+
+    return res.status(500).json({
+      message: "Server error",
+    });
   }
 });
+
 
 export default router;
