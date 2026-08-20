@@ -18,26 +18,42 @@ import UserAppointments from "./pages/UserAppointments";
 import Feedback from "./pages/Feedback";
 import PaymentPage from "./pages/Paymentpage";
 import AdminAddJob from "./pages/admin/AdminAddJob";
+
 import PropTypes from "prop-types";
+
 import AdminLayout from "./layouts/AdminLayout";
 import ScrollToTop from "./components/ScrollToTop";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Chatbot from "./components/Chatbot/Chatbot";
 
-// user layout wrapper
+import SSO from "./pages/SSO";
+
+
+// ======================================================
+// USER LAYOUT
+// ======================================================
+
 const UserLayout = ({ children }) => (
   <div className="mx-4 sm:mx-[10%]">
     <Navbar />
+
     {children}
+
     <Chatbot />
+
     <Footer />
   </div>
 );
 
-// redirect admin to admin dashboard if they're at root "/"
+
+// ======================================================
+// REDIRECT ADMIN TO DASHBOARD
+// ======================================================
+
 const RedirectAdminToDashboard = () => {
   const isAdmin = localStorage.getItem("isAdmin") === "true";
+
   const location = useLocation();
 
   useEffect(() => {
@@ -49,52 +65,270 @@ const RedirectAdminToDashboard = () => {
   return null;
 };
 
+
+// ======================================================
+// APP
+// ======================================================
+
 const App = () => {
-  const isAdmin = localStorage.getItem("isAdmin") === "true";
+  const isAdmin =
+    localStorage.getItem("isAdmin") === "true";
 
   return (
     <>
       <ScrollToTop />
+
       <RedirectAdminToDashboard />
+
       <Routes>
-        {/* ✅ Admin-only layout - No navbar/footer/chatbot */}
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route path="messages" element={<MessageAdmin />} />
-          <Route path="applications" element={<ApplicationsAdmin />} />
-          <Route path="appointments" element={<AppointmentsAdmin />} />
-          <Route path="add-job" element={<AdminAddJob />} />
+
+        {/* ==================================================
+            ADMIN ROUTES
+        ================================================== */}
+
+        <Route
+          path="/admin"
+          element={<AdminLayout />}
+        >
+          <Route
+            path="messages"
+            element={<MessageAdmin />}
+          />
+
+          <Route
+            path="applications"
+            element={<ApplicationsAdmin />}
+          />
+
+          <Route
+            path="appointments"
+            element={<AppointmentsAdmin />}
+          />
+
+          <Route
+            path="add-job"
+            element={<AdminAddJob />}
+          />
         </Route>
 
-        {/* ✅ Admin login page (no navbar/footer) */}
-        <Route path="/admin/login" element={<AdminLogin />} />
 
-        {/* ✅ Regular user pages */}
+        {/* ==================================================
+            ADMIN LOGIN
+        ================================================== */}
+
+        <Route
+          path="/admin/login"
+          element={<AdminLogin />}
+        />
+
+
+        {/* ==================================================
+            REGULAR USER ROUTES
+        ================================================== */}
+
         {!isAdmin && (
           <>
-            <Route path="/" element={<UserLayout><Home /></UserLayout>} />
-            <Route path="/about" element={<UserLayout><About /></UserLayout>} />
-            <Route path="/contact" element={<UserLayout><Contact /></UserLayout>} />
-            <Route path="/doctors" element={<UserLayout><Doctor /></UserLayout>} />
-            <Route path="/doctors/:speciality" element={<UserLayout><Doctor /></UserLayout>} />
-            <Route path="/login" element={<UserLayout><Login /></UserLayout>} />
-            <Route path="/signup" element={<UserLayout><SignUp /></UserLayout>} />
-            <Route path="/appointment/:DocId" element={<UserLayout><Appointment /></UserLayout>} />
-            <Route path="/careers" element={<UserLayout><Careers /></UserLayout>} />
-            <Route path="/apply/:jobId" element={<UserLayout><JobApplication /></UserLayout>} />
-            <Route path="/my-appointments" element={<UserLayout><UserAppointments /></UserLayout>} />
-            <Route path="/feedback" element={<UserLayout><Feedback /></UserLayout>} />
-            <Route path="/payment" element={<UserLayout><PaymentPage /></UserLayout>} />
+
+            {/* HOME */}
+
+            <Route
+              path="/"
+              element={
+                <UserLayout>
+                  <Home />
+                </UserLayout>
+              }
+            />
+
+
+            {/* ABOUT */}
+
+            <Route
+              path="/about"
+              element={
+                <UserLayout>
+                  <About />
+                </UserLayout>
+              }
+            />
+
+
+            {/* CONTACT */}
+
+            <Route
+              path="/contact"
+              element={
+                <UserLayout>
+                  <Contact />
+                </UserLayout>
+              }
+            />
+
+
+            {/* DOCTORS */}
+
+            <Route
+              path="/doctors"
+              element={
+                <UserLayout>
+                  <Doctor />
+                </UserLayout>
+              }
+            />
+
+
+            {/* DOCTORS BY SPECIALITY */}
+
+            <Route
+              path="/doctors/:speciality"
+              element={
+                <UserLayout>
+                  <Doctor />
+                </UserLayout>
+              }
+            />
+
+
+            {/* LOGIN */}
+
+            <Route
+              path="/login"
+              element={
+                <UserLayout>
+                  <Login />
+                </UserLayout>
+              }
+            />
+
+
+            {/* SIGNUP */}
+
+            <Route
+              path="/signup"
+              element={
+                <UserLayout>
+                  <SignUp />
+                </UserLayout>
+              }
+            />
+
+
+            {/* ==================================================
+                CUREGO SSO
+            ================================================== */}
+
+            <Route
+              path="/sso"
+              element={
+                <UserLayout>
+                  <SSO />
+                </UserLayout>
+              }
+            />
+
+
+            {/* APPOINTMENT */}
+
+            <Route
+              path="/appointment/:DocId"
+              element={
+                <UserLayout>
+                  <Appointment />
+                </UserLayout>
+              }
+            />
+
+
+            {/* CAREERS */}
+
+            <Route
+              path="/careers"
+              element={
+                <UserLayout>
+                  <Careers />
+                </UserLayout>
+              }
+            />
+
+
+            {/* JOB APPLICATION */}
+
+            <Route
+              path="/apply/:jobId"
+              element={
+                <UserLayout>
+                  <JobApplication />
+                </UserLayout>
+              }
+            />
+
+
+            {/* USER APPOINTMENTS */}
+
+            <Route
+              path="/my-appointments"
+              element={
+                <UserLayout>
+                  <UserAppointments />
+                </UserLayout>
+              }
+            />
+
+
+            {/* FEEDBACK */}
+
+            <Route
+              path="/feedback"
+              element={
+                <UserLayout>
+                  <Feedback />
+                </UserLayout>
+              }
+            />
+
+
+            {/* PAYMENT */}
+
+            <Route
+              path="/payment"
+              element={
+                <UserLayout>
+                  <PaymentPage />
+                </UserLayout>
+              }
+            />
+
           </>
         )}
 
-        {/* fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+
+        {/* ==================================================
+            FALLBACK
+        ================================================== */}
+
+        <Route
+          path="*"
+          element={
+            <Navigate
+              to="/"
+              replace
+            />
+          }
+        />
+
       </Routes>
     </>
   );
 };
+
+
+// ======================================================
+// PROP TYPES
+// ======================================================
+
 UserLayout.propTypes = {
   children: PropTypes.node.isRequired,
 };
+
 
 export default App;
