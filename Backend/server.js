@@ -17,7 +17,8 @@ import contactRoutes from './routes/contactRoutes.js';
 import paymentRoute from './routes/paymentRoutes.js';
 
 dotenv.config();
-
+console.log("MONGODB_URI exists:", !!process.env.MONGODB_URI);
+console.log("JWT_SECRET exists:", !!process.env.JWT_SECRET);
 const app = express();
 
 // Setup __dirname in ES Module
@@ -32,9 +33,13 @@ app.use(express.json());
 app.use('/uploads/resumes', express.static(path.join(__dirname, 'uploads/resumes')));
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('MongoDB connected successfully'))
-  .catch(err => console.error('MongoDB connection error:', err));
+try {
+  await mongoose.connect(process.env.MONGODB_URI);
+
+  console.log("MongoDB connected successfully");
+} catch (err) {
+  console.error("MongoDB FAILED:", err);
+}
 
 // Routes
 app.use('/api/jobs', jobRoutes);

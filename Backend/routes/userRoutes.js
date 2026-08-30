@@ -14,6 +14,7 @@ const router = express.Router();
 // ======================================================
 router.post("/login", async (req, res) => {
   try {
+    console.log("Mongo ready state:", mongoose.connection.readyState);
     const { email, password } = req.body;
 
     const user = await User.findOne({
